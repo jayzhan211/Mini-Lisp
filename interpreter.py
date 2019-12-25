@@ -27,7 +27,7 @@ class Environment(dict):
         self.outer = outer
 
     def find(self, name):
-        logging.debug('self: {}'.format(self))
+        # logging.debug('self: {}'.format(self))
         if name not in self and self.outer is None:
             raise NameError('{} is not founded'.format(name))
         return self if name in self else self.outer.find(name)
@@ -37,8 +37,8 @@ class GlobalEnvironment(Environment):
     def __init__(self):
         super(GlobalEnvironment, self).__init__()
         self.update({
-            'print_num': print,
-            'print_bool': lambda x: print('#t' if x else '#f'),
+            'print_num': self.print_num,
+            'print_bool': self.print_bool,
             'plus': self.plus,
             'minus': self.minus,
             'multiply': self.multiply,
@@ -51,6 +51,14 @@ class GlobalEnvironment(Environment):
             'or_op': self.or_op,
             'not_op': self.not_op
         })
+
+    def print_bool(self, *args):
+        self.type_checker(bool, args)
+        print(['#f', '#t'][args[0]])
+
+    def print_num(self, *args):
+        self.type_checker(int, args)
+        print(*args)
 
     def plus(self, *args):
         logging.debug(args)
@@ -83,7 +91,7 @@ class GlobalEnvironment(Environment):
 
     def equal(self, *args):
         self.type_checker(int, args)
-        return reduce(lambda x, y: x == y, args)
+        return args.count(args[0]) == len(args)
 
     def and_op(self, *args):
         self.type_checker(bool, args)
@@ -93,12 +101,13 @@ class GlobalEnvironment(Environment):
         self.type_checker(bool, args)
         return any(args)
 
-    def not_op(self, arg):
+    def not_op(self, *arg):
         self.type_checker(bool, arg)
         return not arg
 
     @staticmethod
     def type_checker(dtype, args):
+        logging.debug('type-checker => args: {}'.format(args))
         for arg in args:
             if type(arg) != dtype:
                 raise TypeError('Expect {} but got {}'.format(dtype, type(arg)))
@@ -111,19 +120,19 @@ def interpret_AST(node, environment=None):
     if environment is None:
         environment = GlobalEnvironment()
 
-    try:  # convert SIGNED_INT to int
+    try:
         return int(node)
     except (TypeError, ValueError):
-        # convert '#t' to Python True
         if node == '#t':
             return True
 
-        # convert '#f' to Python False
         if node == '#f':
             return False
 
         if isinstance(node, str):
             logging.debug('node: {} is str'.format(node))
+            logging.debug('environment.find(node): {}'.format(environment.find(node)))
+            logging.debug('environment.find(node)[node]: {}'.format(environment.find(node)[node]))
             return environment.find(node)[node]
 
         logging.debug('node.data: {}'.format(node.data))
@@ -135,6 +144,17 @@ def interpret_AST(node, environment=None):
                 if res is not None:
                     result.append(res)
             return result
+        elif node.data == 'if_exp':
+            (test, then, els) = node.children
+            test_res = interpret_AST(test, environment)
+            if not isinstance(test_res, bool):
+                raise TypeError("Expect 'boolean' but got 'number'.")
+            expr = [els, then][test_res]
+            return interpret_AST(expr, environment)
+        elif node.data == 'def_stmt':
+            (var, expr) = node.children
+            environment[var] = interpret_AST(expr, environment)
+
         else:
             logging.debug('type(node): {}'.format(type(node)))
             logging.debug('node.data: {}'.format(node.data))
@@ -142,4 +162,5 @@ def interpret_AST(node, environment=None):
             proc = interpret_AST(node.data, environment)
             args = tuple(interpret_AST(expr, environment)
                          for expr in node.children)
+            logging.debug('proc -> args: {}'.format(args))
             return proc(*args)

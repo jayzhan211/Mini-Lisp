@@ -53,7 +53,7 @@ BOOL_VAL : "#t" | "#f"
 %import common.LETTER
 %import common.DIGIT
 %import common.WS
-%import common.INT -> NUMBER
+%import common.SIGNED_INT -> NUMBER
 
 
 COMMENT: "//" /[^\n]/*
