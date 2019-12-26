@@ -2,6 +2,7 @@ import logging
 from functools import reduce
 from lark import Lark, UnexpectedInput, UnexpectedToken, UnexpectedCharacters
 
+
 class Interpreter:
     def __init__(self):
         self.tree = None
@@ -113,8 +114,22 @@ class GlobalEnvironment(Environment):
                 raise TypeError('Expect {} but got {}'.format(dtype, type(arg)))
 
 
+class Function:
+    def __init__(self, args, body, environment=None):
+        if environment is None:
+            environment = GlobalEnvironment()
+        self.args = args
+        self.body = body
+        self.environment = environment
+
+    def __call__(self, *params):
+        return interpret_AST(self.body, Environment(self.args, params, self.environment))
+
+
 def interpret_AST(node, environment=None):
     logging.debug('node: {}'.format(node))
+    # if node
+    # logging.debug('node.data: {}'.format(node.data))
     logging.debug('type(node): {}'.format(type(node)))
 
     if environment is None:
@@ -130,9 +145,9 @@ def interpret_AST(node, environment=None):
             return False
 
         if isinstance(node, str):
-            logging.debug('node: {} is str'.format(node))
-            logging.debug('environment.find(node): {}'.format(environment.find(node)))
-            logging.debug('environment.find(node)[node]: {}'.format(environment.find(node)[node]))
+            # logging.debug('node: {} is str'.format(node))
+            # logging.debug('environment.find(node): {}'.format(environment.find(node)))
+            # logging.debug('environment.find(node)[node]: {}'.format(environment.find(node)[node]))
             return environment.find(node)[node]
 
         logging.debug('node.data: {}'.format(node.data))
@@ -154,13 +169,33 @@ def interpret_AST(node, environment=None):
         elif node.data == 'def_stmt':
             (var, expr) = node.children
             environment[var] = interpret_AST(expr, environment)
-
+        elif node.data == 'fun_exp':
+            logging.debug('fun_exp => node.children: {}'.format(node.children))
+            assert len(node.children) == 2
+            args = interpret_AST(node.children[0])
+            body = interpret_AST(node.children[1])
+            return Function(args, body, environment)
+        elif node.data == 'fun_ids':
+            logging.debug('node.children: {}'.format(node.children))
+            return node.children
+        elif node.data == 'fun_body':
+            logging.debug('fun_body => node.children: {}'.format(node.children))
+            # def_stmts + expr
+            for def_stmt in node.children[:-1]:
+                interpret_AST(def_stmt)
+            return node.children[-1]
+        elif node.data == 'fun_call':
+            logging.debug('fun_call => node.children: {}'.format(node.children))
+            func = interpret_AST(node.children[0], environment)
+            params = tuple(interpret_AST(expr, environment)
+                           for expr in node.children[1:])
+            return func(*params)
         else:
             logging.debug('type(node): {}'.format(type(node)))
             logging.debug('node.data: {}'.format(node.data))
             logging.debug('node.children: {}'.format(node.children))
-            proc = interpret_AST(node.data, environment)
+            func = interpret_AST(node.data, environment)
             args = tuple(interpret_AST(expr, environment)
                          for expr in node.children)
             logging.debug('proc -> args: {}'.format(args))
-            return proc(*args)
+            return func(*args)

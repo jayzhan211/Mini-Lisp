@@ -17,28 +17,28 @@ program : stmt+
     | if_exp
 
 ?num_op : plus | minus | multiply | divide | modulus | greater | smaller | equal
-?plus     : "(" "+" exp exp+ ")"
-?minus    : "(" "-" exp exp ")"
-?multiply : "(" "*" exp exp+ ")"
-?divide   : "(" "/" exp exp ")"
-?modulus  : "(" "mod" exp exp ")"
-?greater  : "(" ">" exp exp ")"
-?smaller  : "(" "<" exp exp ")"
-?equal    : "(" "=" exp exp+ ")"
+plus     : "(" "+" exp exp+ ")"
+minus    : "(" "-" exp exp ")"
+multiply : "(" "*" exp exp+ ")"
+divide   : "(" "/" exp exp ")"
+modulus  : "(" "mod" exp exp ")"
+greater  : "(" ">" exp exp ")"
+smaller  : "(" "<" exp exp ")"
+equal    : "(" "=" exp exp+ ")"
 
 ?logical_op : and_op | or_op | not_op
-?and_op : "(" "and" exp exp+ ")"
-?or_op  : "(" "or" exp exp+ ")"
-not_op : "(" "not" exp ")"
+and_op     : "(" "and" exp exp+ ")"
+or_op      : "(" "or" exp exp+ ")"
+not_op     : "(" "not" exp ")"
 
-?def_stmt : "(" "define" variable exp ")"
+def_stmt : "(" "define" variable exp ")"
 ?variable : ID
 
-?fun_exp : "(" "fun" fun_ids fun_body ")"
+?fun_exp  : "(" "fun" fun_ids fun_body ")"
 fun_ids  : "(" ID* ")"
 fun_body : def_stmt* exp
-fun_call : "(" fun_exp param* ")"
-    | "(" fun_name param* ")"
+?fun_call : "(" fun_exp param* ")"
+          | "(" fun_name param* ")"
 ?param    : exp
 ?fun_name : ID
 
