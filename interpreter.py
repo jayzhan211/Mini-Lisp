@@ -18,25 +18,17 @@ class Interpreter:
             return interpret_AST(self.tree)
 
 
-class Environment(dict):
-    def __init__(self, symbol_names=None, symbol_values=None, outer=None):
-        super(Environment, self).__init__()
-        if symbol_names is None:
-            symbol_names = tuple()
-            symbol_values = tuple()
-        self.update(zip(symbol_names, symbol_values))
-        self.outer = outer
-
-    def find(self, name):
-        # logging.debug('self: {}'.format(self))
-        if name not in self and self.outer is None:
-            raise NameError('{} is not founded'.format(name))
-        return self if name in self else self.outer.find(name)
-
-
-class GlobalEnvironment(Environment):
+# class Table(dict):
+#     def __init__(self, symbol_names=None, symbol_values=None, outer=None):
+#         super(Table, self).__init__()
+#         if symbol_names is None:
+#             symbol_names = tuple()
+#             symbol_values = tuple()
+#         self.update(zip(symbol_names, symbol_values))
+#         self.outer = outer
+class Table(dict):
     def __init__(self):
-        super(GlobalEnvironment, self).__init__()
+        super(Table, self).__init__()
         self.update({
             'print_num': self.print_num,
             'print_bool': self.print_bool,
@@ -113,27 +105,32 @@ class GlobalEnvironment(Environment):
             if type(arg) != dtype:
                 raise TypeError('Expect {} but got {}'.format(dtype, type(arg)))
 
+    def find(self, name):
+        if name not in self:
+            raise NameError('{} is not founded'.format(name))
+        return self
+
+    def add_define(self, symbol_names=None, symbol_values=None):
+        self.update(zip(symbol_names, symbol_values))
+
 
 class Function:
     def __init__(self, args, body, environment=None):
         if environment is None:
-            environment = GlobalEnvironment()
+            environment = Table()
         self.args = args
         self.body = body
         self.environment = environment
 
     def __call__(self, *params):
-        return interpret_AST(self.body, Environment(self.args, params, self.environment))
+        table = self.environment
+        table.add_define(self.args, params)
+        return interpret_AST(self.body, table)
 
 
 def interpret_AST(node, environment=None):
-    logging.debug('node: {}'.format(node))
-    # if node
-    # logging.debug('node.data: {}'.format(node.data))
-    logging.debug('type(node): {}'.format(type(node)))
-
     if environment is None:
-        environment = GlobalEnvironment()
+        environment = Table()
 
     try:
         return int(node)
@@ -145,12 +142,7 @@ def interpret_AST(node, environment=None):
             return False
 
         if isinstance(node, str):
-            # logging.debug('node: {} is str'.format(node))
-            # logging.debug('environment.find(node): {}'.format(environment.find(node)))
-            # logging.debug('environment.find(node)[node]: {}'.format(environment.find(node)[node]))
             return environment.find(node)[node]
-
-        logging.debug('node.data: {}'.format(node.data))
 
         if node.data == 'program':
             result = list()
@@ -167,13 +159,14 @@ def interpret_AST(node, environment=None):
             expr = [els, then][test_res]
             return interpret_AST(expr, environment)
         elif node.data == 'def_stmt':
+            logging.debug('def_stmt => node.children: {}'.format(node.children))
             (var, expr) = node.children
             environment[var] = interpret_AST(expr, environment)
         elif node.data == 'fun_exp':
             logging.debug('fun_exp => node.children: {}'.format(node.children))
             assert len(node.children) == 2
-            args = interpret_AST(node.children[0])
-            body = interpret_AST(node.children[1])
+            args = interpret_AST(node.children[0], environment)
+            body = interpret_AST(node.children[1], environment)
             return Function(args, body, environment)
         elif node.data == 'fun_ids':
             logging.debug('node.children: {}'.format(node.children))
@@ -182,7 +175,7 @@ def interpret_AST(node, environment=None):
             logging.debug('fun_body => node.children: {}'.format(node.children))
             # def_stmts + expr
             for def_stmt in node.children[:-1]:
-                interpret_AST(def_stmt)
+                interpret_AST(def_stmt, environment)
             return node.children[-1]
         elif node.data == 'fun_call':
             logging.debug('fun_call => node.children: {}'.format(node.children))
