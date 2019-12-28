@@ -27,7 +27,7 @@ As a simplified language, Mini-LISP has only three types (Boolean, number and fu
 * [X] Recursion
 * [X] Type Checking
 * [X] Nested Function
-* [ ] First-class Function
+* [X] First-class Function
 
 ## Usage
 
