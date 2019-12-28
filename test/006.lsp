@@ -1,3 +1,4 @@
+// nested function
 (define dist-square
     (
         fun (x y)

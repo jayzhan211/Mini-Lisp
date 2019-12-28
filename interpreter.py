@@ -18,39 +18,39 @@ class Interpreter:
             return interpret_AST(self.tree)
 
 
-# class Table(dict):
-#     def __init__(self, symbol_names=None, symbol_values=None, outer=None):
-#         super(Table, self).__init__()
-#         if symbol_names is None:
-#             symbol_names = tuple()
-#             symbol_values = tuple()
-#         self.update(zip(symbol_names, symbol_values))
-#         self.outer = outer
 class Table(dict):
-    def __init__(self):
+    def __init__(self, basic=False, symbol_names=None, symbol_values=None, outer=None):
         super(Table, self).__init__()
-        self.update({
-            'print_num': self.print_num,
-            'print_bool': self.print_bool,
-            'plus': self.plus,
-            'minus': self.minus,
-            'multiply': self.multiply,
-            'divide': self.divide,
-            'modulus': self.modulus,
-            'greater': self.greater,
-            'smaller': self.smaller,
-            'equal': self.equal,
-            'and_op': self.and_op,
-            'or_op': self.or_op,
-            'not_op': self.not_op
-        })
+
+        if symbol_names is None:
+            symbol_names = tuple()
+            symbol_values = tuple()
+        self.update(zip(symbol_names, symbol_values))
+        self.outer = outer
+
+        if basic:
+            self.update({
+                'print_num': self.print_num,
+                'print_bool': self.print_bool,
+                'plus': self.plus,
+                'minus': self.minus,
+                'multiply': self.multiply,
+                'divide': self.divide,
+                'modulus': self.modulus,
+                'greater': self.greater,
+                'smaller': self.smaller,
+                'equal': self.equal,
+                'and_op': self.and_op,
+                'or_op': self.or_op,
+                'not_op': self.not_op
+            })
 
     def print_bool(self, *args):
         self.type_checker(bool, args)
         print(['#f', '#t'][args[0]])
 
     def print_num(self, *args):
-        self.type_checker(int, args)
+        # self.type_checker(int, args)
         print(*args)
 
     def plus(self, *args):
@@ -94,8 +94,9 @@ class Table(dict):
         self.type_checker(bool, args)
         return any(args)
 
-    def not_op(self, *arg):
-        self.type_checker(bool, arg)
+    def not_op(self, arg):
+        logging.debug('arg: {}'.format(arg))
+        self.type_checker(bool, [arg])
         return not arg
 
     @staticmethod
@@ -106,31 +107,28 @@ class Table(dict):
                 raise TypeError('Expect {} but got {}'.format(dtype, type(arg)))
 
     def find(self, name):
-        if name not in self:
+        if name not in self and self.outer is None:
             raise NameError('{} is not founded'.format(name))
-        return self
-
-    def add_define(self, symbol_names=None, symbol_values=None):
-        self.update(zip(symbol_names, symbol_values))
-
+        return self if name in self else self.outer.find(name)
 
 class Function:
     def __init__(self, args, body, environment=None):
         if environment is None:
-            environment = Table()
+            environment = Table(basic=True)
         self.args = args
         self.body = body
         self.environment = environment
 
     def __call__(self, *params):
-        table = self.environment
-        table.add_define(self.args, params)
+        table = Table(symbol_names=self.args, symbol_values=params, outer=self.environment)
         return interpret_AST(self.body, table)
 
 
 def interpret_AST(node, environment=None):
     if environment is None:
-        environment = Table()
+        environment = Table(basic=True)
+
+    # logging.debug('environment: {}'.format(environment))
 
     try:
         return int(node)
@@ -190,5 +188,7 @@ def interpret_AST(node, environment=None):
             func = interpret_AST(node.data, environment)
             args = tuple(interpret_AST(expr, environment)
                          for expr in node.children)
-            logging.debug('proc -> args: {}'.format(args))
+            # logging.debug('proc -> args: {}'.format(args))
+            logging.debug('func: {}'.format(func))
+            logging.debug('args: {}'.format(*args))
             return func(*args)

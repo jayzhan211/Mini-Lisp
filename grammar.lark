@@ -34,10 +34,10 @@ not_op     : "(" "not" exp ")"
 def_stmt : "(" "define" variable exp ")"
 ?variable : ID
 
-?fun_exp  : "(" "fun" fun_ids fun_body ")"
+fun_exp  : "(" "fun" fun_ids fun_body ")"
 fun_ids  : "(" ID* ")"
 fun_body : def_stmt* exp
-?fun_call : "(" fun_exp param* ")"
+fun_call : "(" fun_exp param* ")"
           | "(" fun_name param* ")"
 ?param    : exp
 ?fun_name : ID

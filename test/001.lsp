@@ -1,3 +1,4 @@
+// basic ops
 (print-num (+ 8 9))
 (print-num (+ (- 8 -7) 9))
 (print-num (* 8 9 0))

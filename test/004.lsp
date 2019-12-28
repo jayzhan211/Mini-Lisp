@@ -1,3 +1,4 @@
+// function
 (print-num ((fun (x) (+ x 1)) 2))
 (define foo ((fun () 0) 0))
 (print-num foo)
