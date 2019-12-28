@@ -50,7 +50,7 @@ class Table(dict):
         print(['#f', '#t'][args[0]])
 
     def print_num(self, *args):
-        # self.type_checker(int, args)
+        self.type_checker(int, args)
         print(*args)
 
     def plus(self, *args):
