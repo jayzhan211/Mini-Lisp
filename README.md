@@ -57,7 +57,7 @@ pip install -r requirements.txt
 ## Type Definition
 
 * boolean: `#t` for true and `#f` for false.
-* number: signed integer in [-231, 230], behavior out of this range is not defined.
+* number: signed integer.
 * function: See [Function](#function).
 
 ## Operation Overview
